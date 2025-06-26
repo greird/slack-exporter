@@ -8,7 +8,6 @@ import os
 import sys
 import json
 import time
-import zipfile
 import shutil
 import subprocess
 import requests
@@ -235,10 +234,11 @@ class SlackBackupAutomation:
             logger.error(f"Erreur exécution script: {e}")
             return False
         
-    def get_history(self, channel_id: str, limit: int = 15):
+    def get_history(self, channel_id: str, limit: int = 15, since_days: str = 0):
         """Récupère l'historique complet d'un canal avec pagination."""
         all_messages = []
         cursor = None
+        oldest = (datetime.now() - timedelta(days=since_days)).timestamp()
         
         logger.info(f"Récupération de l'historique pour le canal {channel_id}...")
         
@@ -246,7 +246,8 @@ class SlackBackupAutomation:
             try:
                 params = {
                     "channel": channel_id,
-                    "limit": limit
+                    "limit": limit, 
+                    "oldest": oldest
                 }
                 if cursor:
                     params["cursor"] = cursor
@@ -307,10 +308,9 @@ class SlackBackupAutomation:
                 
                 conv_id = conv["id"]
                 conv_name = conv.get("name", conv_id)
-                
 
                 # La limite ici est la taille du lot par page
-                history = self.get_history(channel_id=conv_id, limit=100)
+                history = self.get_history(channel_id=conv_id, since_days=30)
                 
                 if history.get("ok"):
                     # Sauvegarder l'historique
