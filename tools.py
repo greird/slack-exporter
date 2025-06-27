@@ -9,7 +9,7 @@ def run_bash_script(script_path: str, params: str, capture_output: bool = True):
 
     try:
         if not script_path.exists():
-            logger.error(f"Script non trouvé: {script_path}")
+            logger.error(f"Script not found: {script_path}")
             return False
         
         # Rendre le script exécutable
@@ -23,12 +23,12 @@ def run_bash_script(script_path: str, params: str, capture_output: bool = True):
         ], capture_output=capture_output, text=True)
         
         if result.returncode == 0:
-            logger.info("Script d'attachements exécuté avec succès")
+            logger.info("Script executed successfully")
             return True
         else:
-            logger.error(f"Erreur script: {result.stderr}")
+            logger.error(f"Script error: {result.stderr}")
             return False
         
     except Exception as e:
-        logger.error(f"Erreur exécution script: {e}")
+        logger.error(f"Script execution error: {e}")
         return False

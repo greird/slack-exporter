@@ -37,7 +37,7 @@ class Orchestration:
         cursor = None
         oldest = (datetime.now() - timedelta(days=since_days)).timestamp()
         
-        logger.info(f"Récupération de l'historique pour le canal {channel_id}...")
+        logger.info(f"Retrieving history for channel {channel_id}...")
         
         while True:
             try:
@@ -57,7 +57,7 @@ class Orchestration:
                 
                 if response.status_code == 429: # Rate limited
                     retry_after = int(response.headers.get('Retry-After', 60))
-                    logger.warning(f"Rate limited. Attente de {retry_after} secondes...")
+                    logger.warning(f"Rate limited. Waiting for {retry_after} seconds...")
                     time.sleep(retry_after)
                     continue
 
@@ -70,24 +70,24 @@ class Orchestration:
                     if data.get("has_more"):
                         cursor = data.get("response_metadata", {}).get("next_cursor")
                         if not cursor:
-                            logger.warning("has_more is true, mais aucun next_cursor trouvé. Arrêt de la pagination.")
+                            logger.warning("has_more is true, but no next_cursor found. Stopping pagination.")
                             break
-                        logger.info(f"Page suivante pour le canal {channel_id}...")
+                        logger.info(f"Next page for channel {channel_id}...")
                         time.sleep(1)  # Attendre 1 seconde entre les requêtes pour être respectueux
                     else:
                         break
                 else:
-                    logger.error(f"Erreur API Slack pour le canal {channel_id}: {data.get('error')}")
+                    logger.error(f"Slack API error for channel {channel_id}: {data.get('error')}")
                     break
 
             except requests.exceptions.RequestException as e:
-                logger.error(f"Erreur de requête lors de la récupération de l'historique pour {channel_id}: {e}")
+                logger.error(f"Request error while retrieving history for {channel_id}: {e}")
                 break
             except Exception as e:
-                logger.error(f"Erreur inattendue dans get_history pour {channel_id}: {e}")
+                logger.error(f"Unexpected error in get_history for {channel_id}: {e}")
                 break
 
-        logger.info(f"{len(all_messages)} messages récupérés pour le canal {channel_id}.")
+        logger.info(f"{len(all_messages)} messages retrieved for channel {channel_id}.")
         return {"ok": True, "messages": all_messages, "has_more": False}
 
     def create_manual_export(self):
@@ -115,22 +115,22 @@ class Orchestration:
                         json.dump(history, f, indent=2)
 
     
-            logger.info(f"Export manuel créé: {export_dir}")
+            logger.info(f"Manual export created: {export_dir}")
             return str(export_dir)
             
         except Exception as e:
-            logger.error(f"Erreur création export manuel: {e}")
+            logger.error(f"Error creating manual export: {e}")
             return None
     
     def run_backup(self):
         """Runs the complete backup process"""
-        logger.info("=== Début de la sauvegarde Slack ===")
+        logger.info("=== Starting Slack backup ===")
         
         try:     
             # 1. Créer un export (manuel pour l'instant)
             export_path = self.create_manual_export()
             if not export_path:
-                logger.error("Impossible de créer l'export")
+                logger.error("Could not create export")
                 return False
             
             # 2. Préparer le dossier de sauvegarde
@@ -145,22 +145,22 @@ class Orchestration:
                 params=f"-p {str(backup_folder)}", 
                 capture_output=False
             ):
-                logger.warning("Erreur lors du téléchargement des pièces jointes")
+                logger.warning("Error downloading attachments")
 
             # 4. Upload vers Google Drive
             if self.uploader.setup_credentials():
                 drive_folder_name = f"Slack_Backup_{timestamp}"
                 if self.uploader.upload_folder(str(backup_folder), drive_folder_name):
-                    logger.info("Sauvegarde uploadée vers Google Drive")
+                    logger.info("Backup uploaded to Google Drive")
 
                     # 5. Nettoyer
                     self.cleanup_temp_files()
                 else:
-                    logger.error("Erreur upload Google Drive")
+                    logger.error("Google Drive upload error")
             
-            logger.info("=== Sauvegarde terminée avec succès ===")
+            logger.info("=== Backup completed successfully ===")
             return True
             
         except Exception as e:
-            logger.error(f"Erreur lors de la sauvegarde: {e}")
+            logger.error(f"Error during backup: {e}")
             return False

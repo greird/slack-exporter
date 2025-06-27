@@ -41,7 +41,7 @@ class GoogleDriveUploader:
             return True
             
         except Exception as e:
-            logger.error(f"Erreur configuration Google Drive: {e}")
+            logger.error(f"Google Drive configuration error: {e}")
             return False
     
     def upload_folder(self, local_folder_path, drive_folder_name):
@@ -60,7 +60,7 @@ class GoogleDriveUploader:
             path_to_drive_id = {str(Path(local_folder_path).resolve()): root_folder_id}
 
             # 1. Créer l'arborescence des dossiers sur Google Drive
-            logger.info("Création de l'arborescence des dossiers sur Google Drive...")
+            logger.info("Creating folder structure on Google Drive...")
             for root, dirs, _ in os.walk(local_folder_path):
                 resolved_root = str(Path(root).resolve())
                 parent_folder_id = path_to_drive_id[resolved_root]
@@ -77,10 +77,10 @@ class GoogleDriveUploader:
                     folder = self.service.files().create(body=folder_metadata, fields='id').execute()
                     new_folder_id = folder.get('id')
                     path_to_drive_id[resolved_dir_path] = new_folder_id
-                    logger.info(f"Dossier créé sur Drive: {os.path.relpath(dir_path, local_folder_path)}")
+                    logger.info(f"Folder created on Drive: {os.path.relpath(dir_path, local_folder_path)}")
 
             # 2. Uploader les fichiers dans les bons dossiers
-            logger.info("Upload des fichiers...")
+            logger.info("Uploading files...")
             for root, _, files in os.walk(local_folder_path):
                 resolved_root = str(Path(root).resolve())
                 parent_folder_id = path_to_drive_id[resolved_root]
@@ -101,11 +101,11 @@ class GoogleDriveUploader:
                     ).execute()
                     
                     relative_path = os.path.relpath(file_path, local_folder_path)
-                    logger.info(f"Fichier uploadé: {relative_path}")
+                    logger.info(f"File uploaded: {relative_path}")
             
-            logger.info(f"Dossier complet uploadé vers Google Drive: {drive_folder_name}")
+            logger.info(f"Full folder uploaded to Google Drive: {drive_folder_name}")
             return True
             
         except Exception as e:
-            logger.error(f"Erreur upload Google Drive: {e}")
+            logger.error(f"Google Drive upload error: {e}")
             return False
