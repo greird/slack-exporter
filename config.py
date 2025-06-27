@@ -1,6 +1,6 @@
+import logging
 import os
 import sys
-import logging
 
 CONFIG = {
     "slack_token": os.getenv("SLACK_BOT_TOKEN"),  # Token bot Slack

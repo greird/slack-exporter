@@ -1,15 +1,17 @@
-import os
 import json
-import time
+import os
 import shutil
 import subprocess
-import requests
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import requests
+
 from config import CONFIG, logger
-from slack_exporter import SlackExporter
 from google_drive_uploader import GoogleDriveUploader
+from slack_exporter import SlackExporter
+
 
 class Orchestration:
     def __init__(self):
@@ -35,7 +37,6 @@ class Orchestration:
         """Exécute le script de téléchargement des pièces jointes"""
         try:
             script_path = Path(CONFIG["download_script_path"])
-            print(script_path)
             if not script_path.exists():
                 logger.error(f"Script non trouvé: {script_path}")
                 return False
@@ -49,7 +50,7 @@ class Orchestration:
                 str(script_path),
                 "-p",
                 str(export_path)
-            ], capture_output=True, text=True)
+            ], capture_output=False, text=True)
             
             if result.returncode == 0:
                 logger.info("Script d'attachements exécuté avec succès")

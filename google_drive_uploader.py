@@ -1,7 +1,14 @@
 import os
 from pathlib import Path
 
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+
 from config import CONFIG, logger
+
 
 class GoogleDriveUploader:
     def __init__(self):
@@ -11,11 +18,6 @@ class GoogleDriveUploader:
     def setup_credentials(self):
         """Configure les credentials Google Drive"""
         try:
-            from google.oauth2.credentials import Credentials
-            from google_auth_oauthlib.flow import InstalledAppFlow
-            from google.auth.transport.requests import Request
-            from googleapiclient.discovery import build
-            
             SCOPES = ['https://www.googleapis.com/auth/drive.file']
             
             creds = None
@@ -45,8 +47,6 @@ class GoogleDriveUploader:
     def upload_folder(self, local_folder_path, drive_folder_name):
         """Upload un dossier et sa structure vers Google Drive"""
         try:
-            from googleapiclient.http import MediaFileUpload
-
             # Créer le dossier racine pour cette sauvegarde sur Drive
             root_folder_metadata = {
                 'name': drive_folder_name,

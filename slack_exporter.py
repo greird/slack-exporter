@@ -1,5 +1,7 @@
 import requests
+
 from config import CONFIG, logger
+
 
 class SlackExporter:
     def __init__(self):
@@ -14,7 +16,6 @@ class SlackExporter:
                 headers=self.headers
             )
             data = response.json()
-            print(data)
             if data.get("ok"):
                 return data["team"]
             else:
