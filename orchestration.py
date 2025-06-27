@@ -1,7 +1,5 @@
 import json
-import os
 import shutil
-import subprocess
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -11,6 +9,7 @@ import requests
 from config import CONFIG, logger
 from google_drive_uploader import GoogleDriveUploader
 from slack_exporter import SlackExporter
+from tools import run_bash_script
 
 
 class Orchestration:
@@ -31,37 +30,6 @@ class Orchestration:
         
         if self.backup_dir.exists():
             shutil.rmtree(self.backup_dir)
-    
-    @staticmethod
-    def run_attachment_script(export_path):
-        """Exécute le script de téléchargement des pièces jointes"""
-        try:
-            script_path = Path(CONFIG["download_script_path"])
-            if not script_path.exists():
-                logger.error(f"Script non trouvé: {script_path}")
-                return False
-            
-            # Rendre le script exécutable
-            os.chmod(script_path, 0o755)
-            
-            # Exécuter le script avec le chemin d'export
-            result = subprocess.run([
-                "bash",
-                str(script_path),
-                "-p",
-                str(export_path)
-            ], capture_output=False, text=True)
-            
-            if result.returncode == 0:
-                logger.info("Script d'attachements exécuté avec succès")
-                return True
-            else:
-                logger.error(f"Erreur script: {result.stderr}")
-                return False
-                
-        except Exception as e:
-            logger.error(f"Erreur exécution script: {e}")
-            return False
         
     def get_history(self, channel_id: str, limit: int = 15, since_days: str = 0):
         """Récupère l'historique complet d'un canal avec pagination."""
@@ -171,7 +139,12 @@ class Orchestration:
             shutil.copytree(export_path, backup_folder)
             
             # 3. Exécuter le script de téléchargement des pièces jointes
-            if not self.run_attachment_script(backup_folder):
+            script_path = Path(CONFIG["download_script_path"])
+            if not run_bash_script(
+                script_path=script_path, 
+                params=f"-p {str(backup_folder)}", 
+                capture_output=False
+            ):
                 logger.warning("Erreur lors du téléchargement des pièces jointes")
 
             # 4. Upload vers Google Drive
