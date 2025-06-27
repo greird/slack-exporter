@@ -16,7 +16,7 @@ class GoogleDriveUploader:
         self.google_drive_folder_id = "1nFlVku9UCtKgc0yhqBZilfi5hZlEF36i" # CONFIG["google_drive_folder_id"]
     
     def setup_credentials(self):
-        """Configure les credentials Google Drive"""
+        """Configures Google Drive credentials"""
         try:
             SCOPES = ['https://www.googleapis.com/auth/drive.file']
             
@@ -45,7 +45,7 @@ class GoogleDriveUploader:
             return False
     
     def upload_folder(self, local_folder_path, drive_folder_name):
-        """Upload un dossier et sa structure vers Google Drive"""
+        """Uploads a folder and its structure to Google Drive"""
         try:
             # Créer le dossier racine pour cette sauvegarde sur Drive
             root_folder_metadata = {

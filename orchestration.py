@@ -24,7 +24,7 @@ class Orchestration:
         self.backup_dir.mkdir(exist_ok=True)
     
     def cleanup_temp_files(self):
-        """Nettoie les fichiers temporaires"""
+        """Cleans up temporary files"""
         if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir)
         
@@ -32,7 +32,7 @@ class Orchestration:
             shutil.rmtree(self.backup_dir)
         
     def get_history(self, channel_id: str, limit: int = 15, since_days: str = 0):
-        """Récupère l'historique complet d'un canal avec pagination."""
+        """Retrieves the complete history of a channel with pagination."""
         all_messages = []
         cursor = None
         oldest = (datetime.now() - timedelta(days=since_days)).timestamp()
@@ -91,7 +91,7 @@ class Orchestration:
         return {"ok": True, "messages": all_messages, "has_more": False}
 
     def create_manual_export(self):
-        """Crée un export manuel via l'API Slack"""
+        """Creates a manual export via the Slack API"""
         try:
             export_dir = self.temp_dir / "manual_export"
             export_dir.mkdir(exist_ok=True)
@@ -123,7 +123,7 @@ class Orchestration:
             return None
     
     def run_backup(self):
-        """Exécute le processus complet de sauvegarde"""
+        """Runs the complete backup process"""
         logger.info("=== Début de la sauvegarde Slack ===")
         
         try:     

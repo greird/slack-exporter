@@ -9,7 +9,7 @@ class SlackExporter:
         self.headers = {"Authorization": f"Bearer {self.slack_token}"}
     
     def get_workspace_info(self):
-        """Récupère les informations du workspace"""
+        """Retrieves workspace information"""
         try:
             response = requests.get(
                 "https://slack.com/api/team.info",
@@ -26,7 +26,7 @@ class SlackExporter:
             return None
 
     def get_channels_list(self):
-        """Récupère la liste des channels"""
+        """Retrieves the list of channels"""
         try:
             response = requests.get(
                 "https://slack.com/api/users.conversations",
