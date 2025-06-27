@@ -1,10 +1,8 @@
 import json
 import shutil
-import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-
-import requests
+from datetime import datetime, timedelta
 
 from config import CONFIG, logger
 from google_drive_uploader import GoogleDriveUploader
@@ -30,65 +28,6 @@ class Orchestration:
         
         if self.backup_dir.exists():
             shutil.rmtree(self.backup_dir)
-        
-    def get_history(self, channel_id: str, limit: int = 15, since_days: str = 0):
-        """Retrieves the complete history of a channel with pagination."""
-        all_messages = []
-        cursor = None
-        oldest = (datetime.now() - timedelta(days=since_days)).timestamp()
-        
-        logger.info(f"Retrieving history for channel {channel_id}...")
-        
-        while True:
-            try:
-                params = {
-                    "channel": channel_id,
-                    "limit": limit, 
-                    "oldest": oldest
-                }
-                if cursor:
-                    params["cursor"] = cursor
-
-                response = requests.get(
-                    "https://slack.com/api/conversations.history",
-                    headers=self.exporter.headers,
-                    params=params
-                )
-                
-                if response.status_code == 429: # Rate limited
-                    retry_after = int(response.headers.get('Retry-After', 60))
-                    logger.warning(f"Rate limited. Waiting for {retry_after} seconds...")
-                    time.sleep(retry_after)
-                    continue
-
-                response.raise_for_status()
-                data = response.json()
-
-                if data.get("ok"):
-                    all_messages.extend(data.get("messages", []))
-                    
-                    if data.get("has_more"):
-                        cursor = data.get("response_metadata", {}).get("next_cursor")
-                        if not cursor:
-                            logger.warning("has_more is true, but no next_cursor found. Stopping pagination.")
-                            break
-                        logger.info(f"Next page for channel {channel_id}...")
-                        time.sleep(1)  # Attendre 1 seconde entre les requêtes pour être respectueux
-                    else:
-                        break
-                else:
-                    logger.error(f"Slack API error for channel {channel_id}: {data.get('error')}")
-                    break
-
-            except requests.exceptions.RequestException as e:
-                logger.error(f"Request error while retrieving history for {channel_id}: {e}")
-                break
-            except Exception as e:
-                logger.error(f"Unexpected error in get_history for {channel_id}: {e}")
-                break
-
-        logger.info(f"{len(all_messages)} messages retrieved for channel {channel_id}.")
-        return {"ok": True, "messages": all_messages, "has_more": False}
 
     def create_manual_export(self):
         """Creates a manual export via the Slack API"""
@@ -107,7 +46,8 @@ class Orchestration:
                 conv_name = conv.get("name", conv_id)
 
                 # La limite ici est la taille du lot par page
-                history = self.get_history(channel_id=conv_id, since_days=30)
+                oldest_ts = (datetime.now() - timedelta(days=90)).timestamp()
+                history = self.exporter.get_history(channel_id=conv_id, oldest=oldest_ts)
                 
                 if history.get("ok"):
                     # Sauvegarder l'historique
