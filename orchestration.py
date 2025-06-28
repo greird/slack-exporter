@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from config import CONFIG, logger
 from google_drive_uploader import GoogleDriveUploader
 from slack_exporter import SlackExporter
-from tools import run_bash_script
+from tools import run_bash_script, get_files_in_folder, check_and_compress_file
 
 
 class Orchestration:
@@ -87,13 +87,18 @@ class Orchestration:
             ):
                 logger.warning("Error downloading attachments")
 
-            # 4. Upload vers Google Drive
+            # 4. Compress files when needed
+            files = get_files_in_folder(backup_folder)
+            for file in files:
+                check_and_compress_file(file_path=file, max_size=100*1000000, replace=True)
+
+            # 5. Upload vers Google Drive
             if self.uploader.setup_credentials():
                 drive_folder_name = f"Slack_Backup_{timestamp}"
                 if self.uploader.upload_folder(str(backup_folder), drive_folder_name):
                     logger.info("Backup uploaded to Google Drive")
 
-                    # 5. Nettoyer
+                    # 6. Nettoyer
                     self.cleanup_temp_files()
                 else:
                     logger.error("Google Drive upload error")
