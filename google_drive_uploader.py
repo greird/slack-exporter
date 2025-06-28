@@ -13,7 +13,7 @@ from config import CONFIG, logger
 class GoogleDriveUploader:
     def __init__(self):
         self.credentials_path = CONFIG["google_credentials_path"]
-        self.google_drive_folder_id = "1nFlVku9UCtKgc0yhqBZilfi5hZlEF36i" # CONFIG["google_drive_folder_id"]
+        self.google_drive_folder_id = CONFIG["google_drive_folder_id"]
     
     def setup_credentials(self):
         """Configures Google Drive credentials"""

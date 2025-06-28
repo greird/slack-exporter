@@ -3,10 +3,9 @@ import os
 import sys
 
 CONFIG = {
-    "slack_token": os.getenv("SLACK_BOT_TOKEN"),  # Token bot Slack
-    "google_drive_folder_id": os.getenv("GOOGLE_DRIVE_FOLDER_ID"),
+    "slack_token": os.getenv("SLACK_BOT_TOKEN"),
+    "google_drive_folder_id": os.getenv("GOOGLE_DRIVE_FOLDER_ID", "1nFlVku9UCtKgc0yhqBZilfi5hZlEF36i"),
     "google_credentials_path": os.getenv("GOOGLE_CREDENTIALS_PATH", "credentials.json"),
-    "temp_dir": "./temp_slack_export",
     "backup_dir": "./slack_backups",
     "log_file": "./slack_automation.log"
 }

@@ -14,30 +14,24 @@ class Orchestration:
     def __init__(self):
         self.exporter = SlackExporter()
         self.uploader = GoogleDriveUploader()
-        self.temp_dir = Path(CONFIG["temp_dir"])
         self.backup_dir = Path(CONFIG["backup_dir"])
         
         # Créer les dossiers nécessaires
-        self.temp_dir.mkdir(exist_ok=True)
         self.backup_dir.mkdir(exist_ok=True)
     
     def cleanup_temp_files(self):
         """Cleans up temporary files"""
-        if self.temp_dir.exists():
-            shutil.rmtree(self.temp_dir)
-        
         if self.backup_dir.exists():
             shutil.rmtree(self.backup_dir)
 
-    def create_manual_export(self):
+    def create_manual_export(self, export_path: Path) -> Path:
         """Creates a manual export via the Slack API"""
         try:
-            export_dir = self.temp_dir / "manual_export"
-            export_dir.mkdir(exist_ok=True)
-            
+            export_path.mkdir(exist_ok=True)
+
             # Récupérer la liste des conversations
             conversations = self.exporter.get_channels_list()
-            with open(export_dir / f"channels.json", 'w') as f:
+            with open(export_path / f"channels.json", 'w') as f:
                 json.dump(conversations, f, indent=2)
             
             for conv in conversations:
@@ -51,13 +45,12 @@ class Orchestration:
                 
                 if history.get("ok"):
                     # Sauvegarder l'historique
-                    with open(export_dir / f"{conv_name}.json", 'w') as f:
+                    with open(export_path / f"{conv_name}.json", 'w') as f:
                         json.dump(history, f, indent=2)
 
-    
-            logger.info(f"Manual export created: {export_dir}")
-            return str(export_dir)
-            
+            logger.info(f"Manual export created: {export_path}")
+            return export_path
+
         except Exception as e:
             logger.error(f"Error creating manual export: {e}")
             return None
@@ -67,29 +60,27 @@ class Orchestration:
         logger.info("=== Starting Slack backup ===")
         
         try:     
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_folder = self.backup_dir / f"slack_backup_{timestamp}"
+
             # 1. Créer un export (manuel pour l'instant)
-            export_path = self.create_manual_export()
+            export_path = self.create_manual_export(export_path=backup_folder)
             if not export_path:
                 logger.error("Could not create export")
                 return False
             
-            # 2. Préparer le dossier de sauvegarde
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_folder = self.backup_dir / f"slack_backup_{timestamp}"
-            shutil.copytree(export_path, backup_folder)
-            
             # 3. Exécuter le script de téléchargement des pièces jointes
-            self.exporter.download_attachments(export_path=backup_folder)
+            self.exporter.download_attachments(export_path)
 
             # 4. Compress files when needed
-            files = get_files_in_folder(backup_folder)
+            files = get_files_in_folder(export_path)
             for file in files:
                 check_and_compress_file(file_path=file, max_size=100*1000000, replace=True)
 
             # 5. Upload vers Google Drive
             if self.uploader.setup_credentials():
                 drive_folder_name = f"Slack_Backup_{timestamp}"
-                if self.uploader.upload_folder(str(backup_folder), drive_folder_name):
+                if self.uploader.upload_folder(str(export_path), drive_folder_name):
                     logger.info("Backup uploaded to Google Drive")
 
                     # 6. Nettoyer
