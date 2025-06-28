@@ -13,6 +13,7 @@
 # -o Overwrite files if they already exist in destination folder, otherwise skip them.
 # -s Do not show message when a file is skipped
 
+source .env
 
 while getopts "osp:" flag
 do
@@ -36,11 +37,7 @@ do
 	for file in temp_slack_export/manual_export/"$channel".json
 	do
 		for a in $(cat $file | jq -c '.messages[].files[0]? | [.title, .url_private_download, .filetype] | del(..|nulls)' | sed 's/ //g')
-		do
-			filetype=$(echo $a | jq -r '.[2]')
-
-			if [[ $filetype == $usertype ]] || [[ -z $usertype ]] || [[ -z $filetype ]]
-			then
+			do
 				filename_raw=$(echo $a | jq -r '.[0]')
 				
 				filename=$(echo $filename_raw | sed -e 'y/āáǎàçēéěèīíǐìōóǒòūúǔùǖǘǚǜüĀÁǍÀĒÉĚÈĪÍǏÌŌÓǑÒŪÚǓÙǕǗǙǛÜ/aaaaceeeeiiiioooouuuuuuuuuAAAAEEEEIIIIOOOOUUUUUUUUU/')
@@ -64,9 +61,12 @@ do
 
 					url=$(echo $a | jq -rc '.[1]')
 					
-					curl --progress-bar $url -o "$path/$channel/$filename"
+					curl --progress-bar \
+						-H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+						-o "$path/$channel/$filename" \
+						$url 
+						
 				fi
-			fi
-		done
+			done
 	done
 done
