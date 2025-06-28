@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 from slack_exporter.config import CONFIG, logger
 from slack_exporter.uploader.google_drive_uploader import GoogleDriveUploader
+from slack_exporter.uploader.mega_uploader import MegaUploader
 from slack_exporter.exporter.slack_exporter import SlackExporter
 from slack_exporter.tools import get_files_in_folder, check_and_compress_file
 
@@ -13,7 +14,12 @@ from slack_exporter.tools import get_files_in_folder, check_and_compress_file
 class Orchestration:
     def __init__(self):
         self.exporter = SlackExporter()
-        self.uploader = GoogleDriveUploader()
+        if CONFIG["uploader_service"] == "google_drive":
+            self.uploader = GoogleDriveUploader()
+        elif CONFIG["uploader_service"] == "mega":
+            self.uploader = MegaUploader()
+        else:
+            raise ValueError("Invalid uploader service specified in config.py")
         self.backup_dir = Path(CONFIG["backup_dir"])
         
         # Créer les dossiers nécessaires
@@ -40,7 +46,7 @@ class Orchestration:
                 conv_name = conv.get("name", conv_id)
 
                 # La limite ici est la taille du lot par page
-                oldest_ts = (datetime.now() - timedelta(days=90)).timestamp()
+                oldest_ts = (datetime.now() - timedelta(days=15)).timestamp()
                 history = self.exporter.get_history(channel_id=conv_id, oldest=oldest_ts)
                 
                 if history.get("ok"):
@@ -79,14 +85,14 @@ class Orchestration:
 
             # 5. Upload vers Google Drive
             if self.uploader.setup_credentials():
-                drive_folder_name = f"Slack_Backup_{timestamp}"
-                if self.uploader.upload_folder(str(export_path), drive_folder_name):
-                    logger.info("Backup uploaded to Google Drive")
+                cloud_folder_name = f"Slack_Backup_{timestamp}"
+                if self.uploader.upload_folder(str(export_path), cloud_folder_name):
+                    logger.info("Backup uploaded to cloud storage")
 
                     # 6. Nettoyer
                     self.cleanup_temp_files()
                 else:
-                    logger.error("Google Drive upload error")
+                    logger.error("Cloud storage upload error")
             
             logger.info("=== Backup completed successfully ===")
             return True
