@@ -44,10 +44,12 @@ class SlackExporter:
             logger.error(f"Erreur lors de la récupération des channels: {e}")
             return None
         
-    def get_history(self, channel_id: str, limit: int = 15, oldest: str = 0, cursor: str = None, messages: list = []):
+    def get_history(self, channel_id: str, limit: int = 15, oldest: str = 0, cursor: str = None, messages: list = None):
         """Retrieves the complete history of a channel with pagination."""
         
         logger.info(f"Retrieving history for channel {channel_id}...")
+        if not messages:
+            messages = []
         
         try:
             params = {
