@@ -5,3 +5,4 @@ slack_automation.log
 __pycache__
 slack_backups
 temp_slack_export
+.DS_Store
