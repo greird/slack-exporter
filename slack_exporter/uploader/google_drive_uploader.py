@@ -7,7 +7,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-from config import CONFIG, logger
+from slack_exporter.config import CONFIG, logger
 
 
 class GoogleDriveUploader:

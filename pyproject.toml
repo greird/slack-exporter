@@ -1,5 +1,5 @@
 [project]
-name = "slack-exporter"
+name = "slack_exporter"
 version = "0.1.0"
 description = ""
 authors = [

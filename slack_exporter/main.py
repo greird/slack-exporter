@@ -1,4 +1,4 @@
-from orchestration import Orchestration
+from slack_exporter.orchestration import Orchestration
 
 
 def main():

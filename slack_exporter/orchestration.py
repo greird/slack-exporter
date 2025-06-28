@@ -4,10 +4,10 @@ from datetime import datetime
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from config import CONFIG, logger
-from google_drive_uploader import GoogleDriveUploader
-from slack_exporter import SlackExporter
-from tools import get_files_in_folder, check_and_compress_file
+from slack_exporter.config import CONFIG, logger
+from slack_exporter.uploader.google_drive_uploader import GoogleDriveUploader
+from slack_exporter.exporter.slack_exporter import SlackExporter
+from slack_exporter.tools import get_files_in_folder, check_and_compress_file
 
 
 class Orchestration:

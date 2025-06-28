@@ -3,7 +3,7 @@ import time
 import json
 from pathlib import Path
 
-from config import CONFIG, logger
+from slack_exporter.config import CONFIG, logger
 
 
 class SlackExporter:
