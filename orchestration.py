@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from config import CONFIG, logger
 from google_drive_uploader import GoogleDriveUploader
 from slack_exporter import SlackExporter
-from tools import run_bash_script, get_files_in_folder, check_and_compress_file
+from tools import get_files_in_folder, check_and_compress_file
 
 
 class Orchestration:
@@ -79,13 +79,7 @@ class Orchestration:
             shutil.copytree(export_path, backup_folder)
             
             # 3. Exécuter le script de téléchargement des pièces jointes
-            script_path = Path(CONFIG["download_script_path"])
-            if not run_bash_script(
-                script_path=script_path, 
-                params=f"-p {str(backup_folder)}", 
-                capture_output=False
-            ):
-                logger.warning("Error downloading attachments")
+            self.exporter.download_attachments(export_path=backup_folder)
 
             # 4. Compress files when needed
             files = get_files_in_folder(backup_folder)

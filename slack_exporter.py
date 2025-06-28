@@ -1,6 +1,7 @@
 import requests
 import time
-import requests
+import json
+from pathlib import Path
 
 from config import CONFIG, logger
 
@@ -107,3 +108,49 @@ class SlackExporter:
 
         logger.info(f"{len(messages)} messages retrieved for channel {channel_id}.")
         return {"ok": True, "messages": messages, "has_more": False}
+
+    def download_attachments(self, export_path: Path):
+        """Downloads attachments from exported Slack messages."""
+        logger.info(f"Starting attachment download for {export_path}...")
+        
+        for json_file in export_path.rglob("*.json"):
+            try:
+                with open(json_file, 'r') as f:
+                    data = json.load(f)
+                
+                messages = data.get("messages", [])
+                
+                for message in messages:
+                    if "files" in message:
+                        for file_info in message["files"]:
+                            if "url_private_download" in file_info:
+                                download_url = file_info["url_private_download"]
+                                file_name = file_info["name"]
+                                
+                                # Create a directory for attachments within the export folder
+                                # e.g., <export_path>/attachments/<channel_name>/
+                                relative_path = json_file.relative_to(export_path)
+                                channel_name = relative_path.stem
+                                
+                                attachment_dir = export_path / channel_name
+                                attachment_dir.mkdir(parents=True, exist_ok=True)
+                                
+                                file_path = attachment_dir / file_name
+                                
+                                try:
+                                    response = requests.get(download_url, headers=self.headers, stream=True)
+                                    response.raise_for_status()
+                                    
+                                    with open(file_path, 'wb') as f_out:
+                                        for chunk in response.iter_content(chunk_size=8192):
+                                            f_out.write(chunk)
+                                    logger.info(f"Downloaded attachment: {file_path}")
+                                    
+                                except requests.exceptions.RequestException as e:
+                                    logger.error(f"Error downloading {file_name} from {download_url}: {e}")
+                                except Exception as e:
+                                    logger.error(f"Unexpected error saving {file_name}: {e}")
+            except Exception as e:
+                logger.error(f"Error processing JSON file {json_file}: {e}")
+        
+        logger.info("Attachment download complete.")
