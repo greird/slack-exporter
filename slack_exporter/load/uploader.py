@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 
 class Uploader(ABC):
-    def __init__(self, credentials: str):
+    def __init__(self, credentials: str | dict):
         """Initializes the uploader"""
         self.credentials = credentials
 

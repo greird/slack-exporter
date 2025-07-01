@@ -7,7 +7,7 @@ CONFIG = {
     "google_credentials_path": os.getenv("GOOGLE_CREDENTIALS_PATH"),
     "google_drive_folder_id": os.getenv("GOOGLE_DRIVE_FOLDER_ID", '1nFlVku9UCtKgc0yhqBZilfi5hZlEF36i'),
     "log_file": "./slack_automation.log",
-    "mega_credentials": os.getenv("MEGA_CREDENTIALS"),
+    "mega_credentials": {"login": os.getenv("MEGA_EMAIL"), "password": os.getenv("MEGA_PASSWORD")},
     "remote_folder_id": os.getenv("REMOTE_FOLDER_ID"),
     "slack_token": os.getenv("SLACK_BOT_TOKEN")
 }

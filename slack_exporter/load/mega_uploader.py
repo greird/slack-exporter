@@ -1,4 +1,3 @@
-import ast
 import subprocess
 
 from slack_exporter.config import logger
@@ -6,7 +5,7 @@ from slack_exporter.load.uploader import Uploader
 
 
 class MegaUploader(Uploader):
-    def __init__(self, credentials: str):
+    def __init__(self, credentials: dict[str, str]):
         """Initializes the MegaUploader."""
         self.credentials = credentials
         super().__init__(credentials=self.credentials)
@@ -17,12 +16,11 @@ class MegaUploader(Uploader):
             mega_version = subprocess.run('mega-version', check=True, capture_output=True)
             logger.info(f"{mega_version.stdout.decode().strip()} is available.")
 
-            credentials = ast.literal_eval(self.credentials)
 
             command = [
                 "mega-login",
-                credentials["login"],
-                credentials["password"]
+                self.credentials["login"],
+                self.credentials["password"]
             ]
             
             result = subprocess.run(command, check=True, capture_output=True, text=True)
