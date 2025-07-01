@@ -27,18 +27,16 @@ class SlackETL(ABC):
             oldest_timestamp: datetime.timestamp = None
         ):
         self.local_dir = Path(local_dir)
-        self.remote_dir = Path(remote_dir)
+        self.remote_dir = remote_dir
         self.credentials = credentials
         self.file_suffix = file_suffix
         self.oldest_timestamp = oldest_timestamp
-        
-        self.local_dir.mkdir(parents=True, exist_ok=True)
 
     def _extract(self, exporter: SlackExporter, oldest_timestamp: datetime.timestamp = None) -> Path:
         """Extracts data from Slack"""
         
         try:
-            self.local_dir.mkdir(exist_ok=True)
+            self.local_dir.mkdir(parents=True, exist_ok=True)
 
             # Récupérer la liste des conversations
             conversations = exporter.get_channels_list()
@@ -84,8 +82,8 @@ class SlackETL(ABC):
         logger.info("Loading transformed data...")
         
         if uploader.upload_folder(
-            local_folder_path=str(self.local_dir), 
-            remote_folder_id=str(self.remote_dir)
+            local_folder_path=self.local_dir, 
+            remote_folder_id=self.remote_dir
             ):
             logger.info("Backup uploaded to cloud storage")
 

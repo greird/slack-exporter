@@ -11,6 +11,6 @@ class Uploader(ABC):
         """Sets up the credentials for the uploader"""
         ...
 
-    def upload_folder(self, local_folder_path: str, remote_folder_id: str) -> bool:
+    def upload_folder(self, local_folder_path: str, remote_folder_id: str = "") -> bool:
         """Uploads a folder and its structure to the remote storage"""
         ...

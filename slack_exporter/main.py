@@ -13,10 +13,10 @@ def export_slack_to_mega():
 
     export_slack_to_mega = SlackToMega(
         local_dir=CONFIG['backup_dir'],
-        remote_dir=CONFIG["remote_folder_id"],
+        remote_dir=CONFIG["mega_parent_folder"],
         credentials=CONFIG["mega_credentials"],
         file_suffix=f"_{timestamp}",
-        oldest_timestamp=(datetime.now() - timedelta(days=30)).timestamp()
+        oldest_timestamp=(datetime.now() - timedelta(days=1)).timestamp()
     )
     export_slack_to_mega.run()
 
@@ -29,7 +29,7 @@ def export_slack_to_googledrive():
 
     export_slack_to_googledrive = SlackToGoogleDrive(
         local_dir=CONFIG['backup_dir'],
-        remote_dir=CONFIG["remote_folder_id"],
+        remote_dir=CONFIG["google_drive_folder_id"],
         credentials=CONFIG["google_credentials_path"],
         file_suffix=f"_{timestamp}",
         oldest_timestamp=(datetime.now() - timedelta(days=10)).timestamp()
