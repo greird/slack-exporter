@@ -1,7 +1,8 @@
-import requests
-import time
 import json
+import time
 from pathlib import Path
+
+import requests
 
 from slack_exporter.config import CONFIG, logger
 
@@ -28,22 +29,26 @@ class SlackExporter:
             logger.error(f"Erreur lors de la récupération des infos workspace: {e}")
             return None
 
-    def get_channels_list(self):
+    def get_channels_list(self) -> list:
         """Retrieves the list of channels"""
+        channels = []
+
         try:
             response = requests.get(
                 "https://slack.com/api/users.conversations",
                 headers=self.headers
             )
             data = response.json()
+
             if data.get("ok"):
-                return data["channels"]
+                channels = data["channels"]
             else:
                 logger.error(f"Erreur API Slack: {data.get('error')}")
-                return None
+
         except Exception as e:
             logger.error(f"Erreur lors de la récupération des channels: {e}")
-            return None
+
+        return channels
         
     def get_history(self, channel_id: str, limit: int = 15, oldest: str = 0, cursor: str = None, messages: list = None):
         """Retrieves the complete history of a channel with pagination."""
@@ -109,11 +114,14 @@ class SlackExporter:
         logger.info(f"{len(messages)} messages retrieved for channel {channel_id}.")
         return {"ok": True, "messages": messages, "has_more": False}
 
-    def download_attachments(self, export_path: Path):
+    def download_attachments(self, export_path: Path, file_suffix: str | None):
         """Downloads attachments from exported Slack messages."""
         logger.info(f"Starting attachment download for {export_path}...")
         
         for json_file in export_path.rglob("*.json"):
+            if json_file.name == "channels.json":
+                continue
+
             try:
                 with open(json_file, 'r') as f:
                     data = json.load(f)
@@ -125,10 +133,18 @@ class SlackExporter:
                         for file_info in message["files"]:
                             if "url_private_download" in file_info:
                                 download_url = file_info["url_private_download"]
-                                file_name = file_info["name"]
+
+                                # Insert file_suffix before the file extension
+                                original_name = file_info["name"]
+                                if file_suffix:
+                                    if "." in original_name:
+                                        basename, extension = original_name.rsplit(".", 1)
+                                        file_name = basename + file_suffix + "." + extension
+                                    else:
+                                        file_name = original_name + file_suffix
+                                else:
+                                    file_name = original_name
                                 
-                                # Create a directory for attachments within the export folder
-                                # e.g., <export_path>/attachments/<channel_name>/
                                 relative_path = json_file.relative_to(export_path)
                                 channel_name = relative_path.stem
                                 

@@ -7,15 +7,16 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-from slack_exporter.config import CONFIG, logger
+from slack_exporter.config import logger
+from slack_exporter.load.uploader import Uploader
 
 
-class GoogleDriveUploader:
-    def __init__(self):
-        self.credentials_path = CONFIG["google_credentials_path"]
-        self.google_drive_folder_id = CONFIG["google_drive_folder_id"]
-    
-    def setup_credentials(self):
+class GoogleDriveUploader(Uploader):
+    def __init__(self, credentials: str):
+        self.credentials = credentials
+        super().__init__(credentials=self.credentials)
+
+    def authenticate(self) -> bool:
         """Configures Google Drive credentials"""
         try:
             SCOPES = ['https://www.googleapis.com/auth/drive.file']
@@ -31,7 +32,7 @@ class GoogleDriveUploader:
                     creds.refresh(Request())
                 else:
                     flow = InstalledAppFlow.from_client_secrets_file(
-                        self.credentials_path, SCOPES)
+                        self.credentials, SCOPES)
                     creds = flow.run_local_server(port=0)
                 
                 with open(token_path, 'w') as token:
@@ -44,13 +45,18 @@ class GoogleDriveUploader:
             logger.error(f"Google Drive configuration error: {e}")
             return False
     
-    def upload_folder(self, local_folder_path, drive_folder_name):
+    def upload_folder(self, local_folder_path, remote_folder_id):
         """Uploads a folder and its structure to Google Drive"""
+        logger.info(f"Authenticating to Google Drive...")
+        if not self.authenticate():
+            logger.error("Authentication failed. Cannot upload to Google Drive.")
+            return False
+
         try:
             # Créer le dossier racine pour cette sauvegarde sur Drive
             root_folder_metadata = {
-                'name': drive_folder_name,
-                'parents': [self.google_drive_folder_id],
+                'name': remote_folder_id,
+                'parents': ['1tTgu6ObGVESuGMD9Gj4d_qFWpxB5Kfpw'],
                 'mimeType': 'application/vnd.google-apps.folder'
             }
             root_folder = self.service.files().create(body=root_folder_metadata, fields='id').execute()
@@ -103,7 +109,7 @@ class GoogleDriveUploader:
                     relative_path = os.path.relpath(file_path, local_folder_path)
                     logger.info(f"File uploaded: {relative_path}")
             
-            logger.info(f"Full folder uploaded to Google Drive: {drive_folder_name}")
+            logger.info(f"Full folder uploaded to Google Drive: {remote_folder_id}")
             return True
             
         except Exception as e:

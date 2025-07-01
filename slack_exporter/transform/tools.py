@@ -1,8 +1,9 @@
+import gzip
 import os
 from pathlib import Path
-import gzip
 
 from slack_exporter.config import logger
+
 
 def create_folder_if_not_exists(folder_path: str):
     """Creates a folder if it does not exist"""
