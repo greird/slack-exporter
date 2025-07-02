@@ -37,8 +37,19 @@ Before you begin, ensure you have the following tools installed:
     ```bash
     poetry install
     ```
+3. **Create a Slack App**:
+    Your Slack App should have a Bot Token with the following permissions
+    - channels:history
+    - channels:read
+    - files:read
+    - groups:history
+    - groups:read
+    - links:read
 
-3.  **Configure environment variables**:
+    For a conversation to be part of the export, the Slack App should be added to it.
+
+
+4.  **Configure environment variables**:
     Create a `.env` file at the root of your project based on the example below. 
 
     ```dotenv
