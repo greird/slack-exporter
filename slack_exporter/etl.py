@@ -4,14 +4,17 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 
-from slack_exporter.logging import logger
+from slack_exporter.logger_config import logger
 from slack_exporter.extract.slack_exporter import SlackExporter
 from slack_exporter.load.google_drive_uploader import GoogleDriveUploader
 from slack_exporter.load.mega_uploader import MegaUploader
 from slack_exporter.load.uploader import Uploader
 from slack_exporter.transform.tools import (
     check_and_compress_file,
-    get_files_in_folder
+    get_files_in_folder,
+    sort_files_by_extension,
+    move_files_to_folder,
+    create_folder_if_not_exists
 )
 
 
@@ -21,8 +24,8 @@ class SlackETL(ABC):
     def __init__(
             self, 
             local_dir: str, 
-            remote_dir: str, 
-            credentials: dict[str, str],
+            remote_dir: str = None, 
+            credentials: dict[str, str] = None,
             file_suffix: str = None,
             oldest_timestamp: datetime.timestamp = None
         ):
@@ -72,10 +75,32 @@ class SlackETL(ABC):
         """Transforms the extracted data"""
         logger.info("Transforming extracted data...")
     
-
         files = get_files_in_folder(folder_path=self.local_dir)
+
+        logger.info(f"Checking and compressing files in {self.local_dir} if they exceed 100 MB...")
         for file in files:
-            check_and_compress_file(file_path=file, max_size=100*1000000, replace=True)
+
+            compressed_file_path = check_and_compress_file(file_path=file, max_size=100*1000000, replace=True)
+            if compressed_file_path:
+                files.append(compressed_file_path)
+                files.remove(file)
+
+        logger.info("Sorting files by extension and moving them to respective folders...")
+
+        existing_folders_path_list = [f for f in self.local_dir.iterdir() if f.is_dir()]
+        for folder_path in existing_folders_path_list:
+            files = get_files_in_folder(folder_path)
+            files_by_extension = sort_files_by_extension(files)
+
+            for ext, file_list in files_by_extension.items():
+                target_folder = folder_path.joinpath(ext)
+                
+                create_folder_if_not_exists(str(target_folder))
+
+                move_files_to_folder(
+                    files=file_list, 
+                    target_folder=target_folder
+                )
 
     def _load(self, uploader: Uploader, cleanup: bool = True) -> bool:
         """Loads the transformed data into the desired format or storage"""
