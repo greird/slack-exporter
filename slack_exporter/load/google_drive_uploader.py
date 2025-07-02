@@ -45,7 +45,7 @@ class GoogleDriveUploader(Uploader):
             logger.error(f"Google Drive configuration error: {e}")
             return False
     
-    def upload_folder(self, local_folder_path, remote_folder_id):
+    def upload_folder(self, local_folder_path: Path, remote_folder_id: str) -> bool:
         """Uploads a folder and its structure to Google Drive"""
         logger.info(f"Authenticating to Google Drive...")
         if not self.authenticate():
@@ -53,24 +53,36 @@ class GoogleDriveUploader(Uploader):
             return False
 
         try:
-            # Créer le dossier racine pour cette sauvegarde sur Drive
-            root_folder_metadata = {
-                'name': remote_folder_id,
-                'parents': ['1tTgu6ObGVESuGMD9Gj4d_qFWpxB5Kfpw'],
-                'mimeType': 'application/vnd.google-apps.folder'
-            }
-            root_folder = self.service.files().create(body=root_folder_metadata, fields='id').execute()
-            root_folder_id = root_folder.get('id')
 
-            # Dictionnaire pour mapper les chemins locaux aux IDs de dossier Drive
-            path_to_drive_id = {str(Path(local_folder_path).resolve()): root_folder_id}
+            # Check if the provided local_folder_path exists on Google Drive and return its ID
+            root_folder_id = self._find_folder_id_by_name(local_folder_path.name, remote_folder_id)
+            if not root_folder_id:
+                logger.error(f"Local folder {local_folder_path} does not exist on Google Drive.")
+                
+                # Create the root folder on Drive
+                root_folder_metadata = {
+                    'name': str(local_folder_path),
+                    'parents': [remote_folder_id],
+                    'shared_drive_id': remote_folder_id if remote_folder_id else None,
+                    'mimeType': 'application/vnd.google-apps.folder'
+                }
+                root_folder = self.service.files().create(body=root_folder_metadata, fields='id').execute()
+                root_folder_id = root_folder.get('id')
 
-            # 1. Créer l'arborescence des dossiers sur Google Drive
+                logger.info(f"Created folder on Google Drive: {root_folder_id}")
+
+            else:
+                logger.info(f"Found remote folder ID: {root_folder_id}")
+
+            # map local paths to Drive folder IDs
+            path_to_drive_id = {str(local_folder_path.resolve()): root_folder_id}
+
             logger.info("Creating folder structure on Google Drive...")
             for root, dirs, _ in os.walk(local_folder_path):
                 resolved_root = str(Path(root).resolve())
                 parent_folder_id = path_to_drive_id[resolved_root]
                 
+
                 for dir_name in dirs:
                     dir_path = os.path.join(root, dir_name)
                     resolved_dir_path = str(Path(dir_path).resolve())
@@ -78,14 +90,14 @@ class GoogleDriveUploader(Uploader):
                     folder_metadata = {
                         'name': dir_name,
                         'parents': [parent_folder_id],
-                        'mimeType': 'application/vnd.google-apps.folder'
+                        'mimeType': 'application/vnd.google-apps.folder',
+                        'supportsAllDrives': True
                     }
                     folder = self.service.files().create(body=folder_metadata, fields='id').execute()
                     new_folder_id = folder.get('id')
                     path_to_drive_id[resolved_dir_path] = new_folder_id
-                    logger.info(f"Folder created on Drive: {os.path.relpath(dir_path, local_folder_path)}")
+                    logger.info(f"Folder created on Drive: {new_folder_id}")
 
-            # 2. Uploader les fichiers dans les bons dossiers
             logger.info("Uploading files...")
             for root, _, files in os.walk(local_folder_path):
                 resolved_root = str(Path(root).resolve())
@@ -115,3 +127,20 @@ class GoogleDriveUploader(Uploader):
         except Exception as e:
             logger.error(f"Google Drive upload error: {e}")
             return False
+
+    def _find_folder_id_by_name(self, folder_name: str, parent_id: str = None) -> str | None:
+        """Finds the ID of a folder by its name in Google Drive and within a given parent_id"""
+        if not self.service:
+            logger.error("Google Drive service not initialized. Please authenticate first.")
+            return None
+        
+        query = f"mimeType='application/vnd.google-apps.folder' and name='{folder_name}'"
+        if parent_id:
+            query += f" and '{parent_id}' in parents"
+
+        response = self.service.files().list(q=query, fields='files(id)').execute()
+
+        folders = response.get('files', [])
+
+        return folders[0].get('id') if folders else None
+    

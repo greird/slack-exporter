@@ -79,8 +79,8 @@ class SlackETL(ABC):
 
     def _load(self, uploader: Uploader) -> bool:
         """Loads the transformed data into the desired format or storage"""
-        logger.info("Loading transformed data...")
-        
+        logger.info(f"Loading transformed data...")
+
         if uploader.upload_folder(
             local_folder_path=self.local_dir, 
             remote_folder_id=self.remote_dir

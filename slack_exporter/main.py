@@ -28,10 +28,9 @@ def export_slack_to_googledrive():
     logger.info(f"Local backup directory: {CONFIG['backup_dir']}")
 
     export_slack_to_googledrive = SlackToGoogleDrive(
-        local_dir=CONFIG['backup_dir'],
-        remote_dir=CONFIG["google_drive_folder_id"],
+        local_dir=CONFIG['backup_dir'] + f"_{timestamp}",
+        remote_dir=CONFIG["google_drive_parent_folder_id"],
         credentials=CONFIG["google_credentials_path"],
-        file_suffix=f"_{timestamp}",
         oldest_timestamp=(datetime.now() - timedelta(days=10)).timestamp()
     )
     export_slack_to_googledrive.run()
