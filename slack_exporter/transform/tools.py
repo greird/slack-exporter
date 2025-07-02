@@ -5,7 +5,7 @@ from pathlib import Path
 from slack_exporter.config import logger
 
 
-def create_folder_if_not_exists(folder_path: str):
+def create_folder_if_not_exists(folder_path: str) -> bool:
     """Creates a folder if it does not exist"""
     try:
         Path(folder_path).mkdir(parents=True, exist_ok=True)
