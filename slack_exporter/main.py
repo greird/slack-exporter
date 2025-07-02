@@ -1,30 +1,32 @@
+import os
 from datetime import datetime, timedelta
 
-from slack_exporter.config import CONFIG, logger
-from slack_exporter.etl import SlackToGoogleDrive, SlackToMega
-
-
-def export_slack_to_mega(since_days: int = 90):
-    SlackToMega(
-        local_dir=CONFIG['backup_dir'],
-        remote_dir=CONFIG["mega_parent_folder"],
-        credentials=CONFIG["mega_credentials"],
-        file_suffix=f"_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-        oldest_timestamp=(datetime.now() - timedelta(days=since_days)).timestamp()
-    ).run()
-
-def export_slack_to_googledrive(since_days: int = 90):
-    SlackToGoogleDrive(
-        local_dir=CONFIG['backup_dir'] + f"_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-        remote_dir=CONFIG["google_drive_parent_folder_id"],
-        credentials=CONFIG["google_credentials_path"],
-        oldest_timestamp=(datetime.now() - timedelta(days=since_days)).timestamp()
-    ).run()
+from slack_exporter.logging import logger
+from slack_exporter.etl import (
+    SlackToGoogleDrive, 
+    SlackToLocal,
+    SlackToLocalWithCompression,
+    SlackToMega,
+    UploadFolderToGoogleDrive
+)
 
 if __name__ == "__main__":
     logger.info("=== Starting Slack backup ===")
     # Uncomment the line below to run the Mega.io export
-    # export_slack_to_mega()
+    SlackToMega(
+        local_dir=f"./slack_backups_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        remote_dir="",
+        credentials={"login": os.getenv("MEGA_EMAIL"), "password": os.getenv("MEGA_PASSWORD")},
+        file_suffix=f"_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        oldest_timestamp=(datetime.now() - timedelta(days=90)).timestamp()
+    ).run()
+
     # Uncomment the line below to run the Google Drive export
-    export_slack_to_googledrive()
+    # SlackToGoogleDrive(
+    #     local_dir=f"./slack_backups_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+    #     remote_dir='1Ylrd8evEMdc_LCEWER6wttdQqO8JZck2',
+    #     credentials='credentials.json',
+    #     oldest_timestamp=(datetime.now() - timedelta(days=90)).timestamp()
+    # ).run()
+
     logger.info("=== Slack backup completed ===")

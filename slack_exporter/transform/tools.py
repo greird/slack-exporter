@@ -2,7 +2,7 @@ import gzip
 import os
 from pathlib import Path
 
-from slack_exporter.config import logger
+from slack_exporter.logging import logger
 
 
 def create_folder_if_not_exists(folder_path: str) -> bool:

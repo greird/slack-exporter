@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 
-from slack_exporter.config import logger
+from slack_exporter.logging import logger
 from slack_exporter.extract.slack_exporter import SlackExporter
 from slack_exporter.load.google_drive_uploader import GoogleDriveUploader
 from slack_exporter.load.mega_uploader import MegaUploader
@@ -77,7 +77,7 @@ class SlackETL(ABC):
         for file in files:
             check_and_compress_file(file_path=file, max_size=100*1000000, replace=True)
 
-    def _load(self, uploader: Uploader) -> bool:
+    def _load(self, uploader: Uploader, cleanup: bool = True) -> bool:
         """Loads the transformed data into the desired format or storage"""
         logger.info(f"Loading transformed data...")
 
@@ -87,7 +87,9 @@ class SlackETL(ABC):
             ):
             logger.info("Backup uploaded to cloud storage")
 
-            shutil.rmtree(self.local_dir)
+            if cleanup:
+                logger.info("Cleaning up local directory...")
+                shutil.rmtree(self.local_dir)
         else:
             logger.error("Cloud storage upload error")
         
@@ -114,3 +116,32 @@ class SlackToGoogleDrive(SlackETL):
         self._extract(exporter=SlackExporter(), oldest_timestamp=self.oldest_timestamp)
         self._transform()
         self._load(uploader=GoogleDriveUploader(credentials=self.credentials))
+
+class SlackToLocal(SlackETL):
+    """Slack ETL process that saves data locally without uploading to cloud storage."""
+
+    def run(self):
+        self._extract(exporter=SlackExporter(), oldest_timestamp=self.oldest_timestamp)
+        self._transform()
+        logger.info(f"Data saved locally at {self.local_dir}")
+        return self.local_dir
+    
+class SlackToLocalWithCompression(SlackETL):
+    """Slack ETL process that saves data locally and compresses it."""
+
+    def run(self):
+        self._extract(exporter=SlackExporter(), oldest_timestamp=self.oldest_timestamp)
+        self._transform()
+        compressed_file = check_and_compress_file(
+            file_path=self.local_dir, 
+            max_size=100*1000000, 
+            replace=True
+        )
+        logger.info(f"Data saved and compressed locally at {compressed_file}")
+        return compressed_file
+    
+class UploadFolderToGoogleDrive(SlackETL):
+    """Uploads a local folder to Google Drive."""
+
+    def run(self):
+        self._load(uploader=GoogleDriveUploader(credentials=self.credentials), cleanup=False)

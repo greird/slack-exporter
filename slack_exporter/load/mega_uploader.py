@@ -1,6 +1,6 @@
 import subprocess
 
-from slack_exporter.config import logger
+from slack_exporter.logging import logger
 from slack_exporter.load.uploader import Uploader
 
 

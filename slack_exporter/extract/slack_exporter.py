@@ -1,15 +1,16 @@
 import json
+import os
 import time
 from pathlib import Path
 
 import requests
 
-from slack_exporter.config import CONFIG, logger
+from slack_exporter.logging import logger
 
 
 class SlackExporter:
     def __init__(self):
-        self.slack_token = CONFIG["slack_token"]
+        self.slack_token = os.getenv("SLACK_BOT_TOKEN")
         self.headers = {"Authorization": f"Bearer {self.slack_token}"}
     
     def get_workspace_info(self):
