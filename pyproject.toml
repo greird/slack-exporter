@@ -2,9 +2,7 @@
 name = "slack_exporter"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Hubert Fauconnier",email = "h.fauconnier@gmail.com"}
-]
+authors = []
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
