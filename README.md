@@ -2,6 +2,11 @@
 
 This project automates the backup of Slack workspace files to a local folder, with options to upload the backup folder to Google Drive or Mega.io.
 
+## DISCLAIMER
+
+This project is a work in progress and is meant to run locally since some of the authentication process is not secure enough.
+Also note, Gemini CLI has been used extensively to write the code in this repository, including this README.
+
 ## Features
 
 - **History Export**: Retrieves conversation history from public and private channels.
@@ -82,14 +87,11 @@ Expand on the [Uploader](/slack_exporter/load/uploader.py) class to create your 
 
 ## Usage
 
-To run one of the existing ETL, use one of these Poetry command.
+To run one of the existing ETL, edit and run `slack_exporter/main.py`.
 
 ```bash
-poetry run export_slack_to_googledrive
-poetry run export_slack_to_mega
+python slack_exporter/main.py
 ```
-
-Edit `main.py` to create your own configuration.
 
 ## Project Structure
 
