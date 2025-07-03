@@ -2,7 +2,11 @@ import os
 from pathlib import Path
 
 from slack_exporter.logger_config import logger
-from slack_exporter.transform.tools import get_files_in_folder, create_folder_if_not_exists
+from slack_exporter.transform.tools import (
+    create_folder_if_not_exists,
+    get_files_in_folder
+)
+
 
 class FileOrganizer:
     """Class for organizing files in a directory."""

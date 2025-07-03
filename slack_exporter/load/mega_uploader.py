@@ -1,7 +1,7 @@
 import subprocess
 
-from slack_exporter.logger_config import logger
 from slack_exporter.load.uploader import Uploader
+from slack_exporter.logger_config import logger
 
 
 class MegaUploader(Uploader):

@@ -3,15 +3,15 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 
-from slack_exporter.logger_config import logger
 from slack_exporter.extract.exporter import Exporter
 from slack_exporter.extract.slack_exporter import SlackExporter
 from slack_exporter.load.google_drive_uploader import GoogleDriveUploader
 from slack_exporter.load.mega_uploader import MegaUploader
 from slack_exporter.load.uploader import Uploader
-from slack_exporter.transform.tools import get_files_in_folder
+from slack_exporter.logger_config import logger
 from slack_exporter.transform.compress import FileCompressor
 from slack_exporter.transform.organize import FileOrganizer
+from slack_exporter.transform.tools import get_files_in_folder
 
 
 class ETL(ABC):

@@ -5,8 +5,8 @@ from pathlib import Path
 
 import requests
 
-from slack_exporter.logger_config import logger
 from slack_exporter.extract.exporter import Exporter
+from slack_exporter.logger_config import logger
 
 
 class SlackExporter(Exporter):

@@ -3,6 +3,7 @@ from pathlib import Path
 
 from slack_exporter.logger_config import logger
 
+
 class FileCompressor:
     """Class for compressing files that exceed a specified size limit."""
     
