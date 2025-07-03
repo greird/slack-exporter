@@ -28,13 +28,9 @@ def get_files_in_folder(folder_path: Path, file_list: list[Path] = None) -> list
     if not file_list:
         file_list = []
 
-    for root, subdir, files in os.walk(folder_path):
+    for root, _, files in os.walk(folder_path):
+
         for file in files:
             file_list.append(Path(root) / file)
-
-        if subdir:
-            for dir in subdir:
-                folder_path = Path(root) / dir
-                return get_files_in_folder(folder_path, file_list)
         
     return file_list

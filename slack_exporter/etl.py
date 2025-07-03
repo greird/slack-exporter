@@ -133,16 +133,6 @@ class SlackToLocal(ETL):
         logger.info(f"Data saved locally at {self.local_dir}")
         return self.local_dir
     
-class SlackToLocalWithCompression(ETL):
-    """Slack ETL process that saves data locally and compresses it."""
-
-    def run(self):
-        self._extract(exporter=SlackExporter())
-        self._transform()
-        compressed_file = FileCompressor(max_size=100*1000000).compress_file(file_path=self.local_dir, replace=True)
-        logger.info(f"Data saved and compressed locally at {compressed_file}")
-        return compressed_file
-    
 class UploadFolderToGoogleDrive(ETL):
     """Uploads a local folder to Google Drive."""
 
