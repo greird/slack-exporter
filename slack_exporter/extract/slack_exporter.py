@@ -51,7 +51,14 @@ class SlackExporter:
 
         return channels
         
-    def get_history(self, channel_id: str, limit: int = 15, oldest: str = 0, cursor: str = None, messages: list = None):
+    def get_channel_history(
+            self, 
+            channel_id: str, 
+            limit: int = 15, 
+            oldest: str = 0, 
+            cursor: str = None, 
+            messages: list = None
+        ) -> dict:
         """Retrieves the complete history of a channel with pagination."""
         
         logger.info(f"Retrieving history for channel {channel_id}...")
@@ -171,3 +178,45 @@ class SlackExporter:
                 logger.error(f"Error processing JSON file {json_file}: {e}")
         
         logger.info("Attachment download complete.")
+
+    def export_all(
+            self, 
+            export_path: Path, 
+            oldest_timestamp: float = None, 
+            file_suffix: str | None = None
+        ) -> Path | None:
+        """Exports all channels history and files."""
+        logger.info(f"Creating export at {export_path}...")
+
+        if not export_path.exists():
+            export_path.mkdir(parents=True, exist_ok=True)
+
+        workspace_info = self.get_workspace_info()
+        if not workspace_info:
+            raise RuntimeError("Failed to retrieve workspace information. Please check your Slack token and permissions.")
+
+        channels = self.get_channels_list()
+        if not channels:
+            raise RuntimeWarning("No channels found in the workspace. Please check your Slack token and permissions.")
+
+        for channel in channels:
+            channel_id = channel["id"]
+            channel_name = channel["name"]
+            logger.info(f"Exporting channel: {channel_name} ({channel_id})")
+
+            history = self.get_channel_history(channel_id, oldest=oldest_timestamp)
+            if not history.get("ok"):
+                logger.error(f"Failed to retrieve history for channel {channel_name}: {history.get('error')}")
+                continue
+
+            channel_export_path = export_path / f"{channel_name}.json"
+            with open(channel_export_path, 'w') as f:
+                json.dump(history, f, indent=4)
+            
+            logger.info(f"Channel {channel_name} exported to {channel_export_path}")
+
+        self.download_attachments(export_path, file_suffix=file_suffix)
+        
+        logger.info("Export completed successfully.")
+
+        return export_path
