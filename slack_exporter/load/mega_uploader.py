@@ -5,27 +5,35 @@ from slack_exporter.load.uploader import Uploader
 
 
 class MegaUploader(Uploader):
+    """This class handles uploading files to Mega.io using the megacmd command-line tool.
+    It requires `megacmd` to be installed and available in the system's PATH.
+
+    Attributes:
+        credentials (dict[str, str]): A dictionary containing 'login' and 'password' for Mega.io authentication.
+    """
+    
     def __init__(self, credentials: dict[str, str]):
-        """Initializes the MegaUploader."""
-        self.credentials = credentials
-        super().__init__(credentials=self.credentials)
+        super().__init__(credentials)
 
         try:
             mega_version = subprocess.run('mega-version', check=True, capture_output=True)
             logger.info(f"{mega_version.stdout.decode().strip()} is available.")
 
         except subprocess.CalledProcessError as e:
-            logger.error(f"megacmd not found. Please ensure it is installed and in your system's PATH.")
-            return False
+            raise FileNotFoundError("megacmd not found. Please ensure it is installed and in your system's PATH.")
 
-    def authenticate(self) -> bool:
-        """Configures Mega.io credentials using megacmd."""
+    def authenticate(self, credentials: dict[str, str]) -> bool:
+        """This method uses the `mega-login` command from megacmd to authenticate.
+
+        Returns:
+            bool: True if authentication was successful, False otherwise.
+        """
 
         try:
             command = [
                 "mega-login",
-                self.credentials["login"],
-                self.credentials["password"]
+                credentials["login"],
+                credentials["password"]
             ]
  
             result = subprocess.run(command, check=True, capture_output=True, text=True)

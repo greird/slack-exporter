@@ -12,12 +12,23 @@ from slack_exporter.load.uploader import Uploader
 
 
 class GoogleDriveUploader(Uploader):
-    def __init__(self, credentials: str):
-        self.credentials = credentials
-        super().__init__(credentials=self.credentials)
+    """This class handles uploading files to Google Drive using the Google Drive API.
 
-    def authenticate(self) -> bool:
-        """Configures Google Drive credentials"""
+    Attributes:
+        credentials (str): The path to the OAuth 2.0 credentials JSON file.
+    """
+
+    def __init__(self, credentials: str = './credentials.json'):
+        super().__init__(credentials)
+
+    def authenticate(self, credentials: str) -> bool:
+        """This method uses OAuth 2.0 to authenticate the user and obtain credentials.
+        It checks for existing credentials in 'token.json' and refreshes them if necessary.
+        If no valid credentials are found, it prompts the user to log in and authorizes the application.
+
+        Returns:
+            bool: True if authentication was successful, False otherwise.
+        """
         try:
             SCOPES = ['https://www.googleapis.com/auth/drive.file']
             
@@ -31,8 +42,7 @@ class GoogleDriveUploader(Uploader):
                 if creds and creds.expired and creds.refresh_token:
                     creds.refresh(Request())
                 else:
-                    flow = InstalledAppFlow.from_client_secrets_file(
-                        self.credentials, SCOPES)
+                    flow = InstalledAppFlow.from_client_secrets_file(credentials, SCOPES)
                     creds = flow.run_local_server(port=0)
                 
                 with open(token_path, 'w') as token:

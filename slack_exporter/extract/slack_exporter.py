@@ -6,12 +6,51 @@ from pathlib import Path
 import requests
 
 from slack_exporter.logger_config import logger
+from slack_exporter.extract.exporter import Exporter
 
 
-class SlackExporter:
+class SlackExporter(Exporter):
+    """Class to export Slack channels history and files.
+
+    This class handles authentication, retrieving channel lists, fetching channel history,
+    and downloading attachments from Slack channels.
+        
+    Methods:
+        authenticate(): Authenticates the Slack API using the bot token.
+        get_workspace_info(): Retrieves workspace information.
+        get_channels_list(): Retrieves the list of channels in the workspace.
+        get_channel_history(channel_id, limit=15, cursor=None, messages=None): Retrieves the complete history of a channel with pagination.
+        download_attachments(): Downloads attachments from exported Slack messages.
+        export(): Exports all channels history and files."""
+
     def __init__(self):
+        super().__init__()
+
+    def authenticate(self) -> bool:
+        """Authenticates the Slack API using the bot token."""
+
         self.slack_token = os.getenv("SLACK_BOT_TOKEN")
         self.headers = {"Authorization": f"Bearer {self.slack_token}"}
+
+        if not self.slack_token:
+            logger.error("SLACK_BOT_TOKEN environment variable is not set.")
+            return False
+
+        try:
+            response = requests.get(
+                "https://slack.com/api/auth.test",
+                headers=self.headers
+            )
+            data = response.json()
+            if data.get("ok"):
+                logger.info("Slack authentication successful.")
+                return True
+            else:
+                logger.error(f"Slack authentication failed: {data.get('error')}")
+                return False
+        except Exception as e:
+            logger.error(f"Error during Slack authentication: {e}")
+            return False
     
     def get_workspace_info(self):
         """Retrieves workspace information"""
@@ -55,12 +94,23 @@ class SlackExporter:
             self, 
             channel_id: str, 
             limit: int = 15, 
-            oldest: str = 0, 
             cursor: str = None, 
-            messages: list = None
+            messages: list = None,
+            oldest_timestamp: float = 0
         ) -> dict:
-        """Retrieves the complete history of a channel with pagination."""
-        
+        """Retrieves the complete history of a channel with pagination.
+
+        Args:
+            channel_id (str): The ID of the channel to retrieve history from.
+            limit (int): The maximum number of messages to retrieve per request.
+            cursor (str): The cursor for pagination, if any.
+            messages (list): A list to accumulate messages across multiple requests.    
+            oldest_timestamp (float): The timestamp to start retrieving messages from.
+
+        Returns:
+            dict: A dictionary containing the messages and a boolean indicating if there are more messages to retrieve.
+        """
+
         logger.info(f"Retrieving history for channel {channel_id}...")
         if not messages:
             messages = []
@@ -69,7 +119,7 @@ class SlackExporter:
             params = {
                 "channel": channel_id,
                 "limit": limit, 
-                "oldest": oldest
+                "oldest": oldest_timestamp
             }
             if cursor:
                 params["cursor"] = cursor
@@ -97,12 +147,12 @@ class SlackExporter:
 
                     if cursor:
                         logger.info(f"Next page for channel {channel_id}...")
-                        time.sleep(1)  # Attendre 1 seconde entre les requêtes pour être respectueux
+                        time.sleep(1)
 
                         return self.get_history(
                             channel_id=channel_id,
                             limit=limit,
-                            oldest=oldest,
+                            oldest=oldest_timestamp,
                             cursor=cursor,
                             messages=messages
                         )
@@ -122,10 +172,20 @@ class SlackExporter:
         logger.info(f"{len(messages)} messages retrieved for channel {channel_id}.")
         return {"ok": True, "messages": messages, "has_more": False}
 
-    def download_attachments(self, export_path: Path, file_suffix: str | None):
-        """Downloads attachments from exported Slack messages."""
-        logger.info(f"Starting attachment download for {export_path}...")
+    def download_attachments(self, export_path: Path, file_suffix: str = None) -> None:
+        """Downloads attachments from exported Slack messages.
+
+        This method iterates through all JSON files in the export path, checks for messages with attachments,
+        and downloads each attachment to a corresponding directory named after the channel.
+        The downloaded files will have a suffix added before the file extension if specified.
         
+        Args:
+            export_path (Path): The path where the exported data is stored.
+            file_suffix (str): A suffix to add to the filenames of downloaded attachments.
+        """
+
+        logger.info(f"Starting attachment download for {export_path}...")
+
         for json_file in export_path.rglob("*.json"):
             if json_file.name == "channels.json":
                 continue
@@ -152,10 +212,10 @@ class SlackExporter:
                                         file_name = original_name + file_suffix
                                 else:
                                     file_name = original_name
-                                
+
                                 relative_path = json_file.relative_to(export_path)
                                 channel_name = relative_path.stem
-                                
+
                                 attachment_dir = export_path / channel_name
                                 attachment_dir.mkdir(parents=True, exist_ok=True)
                                 
@@ -179,13 +239,22 @@ class SlackExporter:
         
         logger.info("Attachment download complete.")
 
-    def export_all(
-            self, 
-            export_path: Path, 
-            oldest_timestamp: float = None, 
-            file_suffix: str | None = None
+    def export(self, 
+               export_path: Path, 
+               file_suffix: str = None, 
+               oldest_timestamp: float = None
         ) -> Path | None:
-        """Exports all channels history and files."""
+        """Exports all channels history and files.
+
+        Args:
+            export_path (Path): The path where the exported data will be saved.
+            file_suffix (str): A suffix to add to the filenames of downloaded attachments.
+            oldest_timestamp (float): The timestamp to start retrieving messages from.
+
+        Returns:
+            Path | None: The path to the exported data or None if the export failed.
+        """
+
         logger.info(f"Creating export at {export_path}...")
 
         if not export_path.exists():
@@ -204,7 +273,11 @@ class SlackExporter:
             channel_name = channel["name"]
             logger.info(f"Exporting channel: {channel_name} ({channel_id})")
 
-            history = self.get_channel_history(channel_id, oldest=oldest_timestamp)
+            history = self.get_channel_history(
+                channel_id=channel_id, 
+                oldest_timestamp=oldest_timestamp
+                )
+
             if not history.get("ok"):
                 logger.error(f"Failed to retrieve history for channel {channel_name}: {history.get('error')}")
                 continue
@@ -215,8 +288,8 @@ class SlackExporter:
             
             logger.info(f"Channel {channel_name} exported to {channel_export_path}")
 
-        self.download_attachments(export_path, file_suffix=file_suffix)
-        
+        self.download_attachments(export_path, file_suffix)
+
         logger.info("Export completed successfully.")
 
         return export_path

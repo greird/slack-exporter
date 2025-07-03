@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from slack_exporter.logger_config import logger
+from slack_exporter.extract.exporter import Exporter
 from slack_exporter.extract.slack_exporter import SlackExporter
 from slack_exporter.load.google_drive_uploader import GoogleDriveUploader
 from slack_exporter.load.mega_uploader import MegaUploader
@@ -40,20 +41,20 @@ class ETL(ABC):
         self.file_suffix = file_suffix
         self.oldest_timestamp = oldest_timestamp
 
-    def _extract(self, exporter: SlackExporter, oldest_timestamp: datetime.timestamp = None) -> Path:
+    def _extract(self, exporter: Exporter) -> Path:
         """Extracts data from a source using the provided exporter.
         
         Args:
             exporter: An instance of an exporter class to handle data extraction.
-            oldest_timestamp (datetime.timestamp): Optional timestamp to filter data.
+
         Returns:
             Path: The path to the exported data or None if an error occurred.
         """
         
         try:
-            return exporter.export_all(
+            return exporter.export(
                 export_path=self.local_dir,
-                oldest_timestamp=oldest_timestamp,
+                oldest_timestamp=self.oldest_timestamp,
                 file_suffix=self.file_suffix
             )
 
@@ -111,7 +112,7 @@ class ETL(ABC):
 class SlackToMega(ETL):
 
     def run(self):
-        self._extract(exporter=SlackExporter(), oldest_timestamp=self.oldest_timestamp) # TODO: Move auth to parameters
+        self._extract(exporter=SlackExporter())
         self._transform()
         self._load(uploader=MegaUploader(credentials=self.credentials))
 
@@ -119,7 +120,7 @@ class SlackToMega(ETL):
 class SlackToGoogleDrive(ETL):
     
     def run(self):
-        self._extract(exporter=SlackExporter(), oldest_timestamp=self.oldest_timestamp)
+        self._extract(exporter=SlackExporter())
         self._transform()
         self._load(uploader=GoogleDriveUploader(credentials=self.credentials))
 
@@ -127,7 +128,7 @@ class SlackToLocal(ETL):
     """Slack ETL process that saves data locally without uploading to cloud storage."""
 
     def run(self):
-        self._extract(exporter=SlackExporter(), oldest_timestamp=self.oldest_timestamp)
+        self._extract(exporter=SlackExporter())
         self._transform()
         logger.info(f"Data saved locally at {self.local_dir}")
         return self.local_dir
@@ -136,7 +137,7 @@ class SlackToLocalWithCompression(ETL):
     """Slack ETL process that saves data locally and compresses it."""
 
     def run(self):
-        self._extract(exporter=SlackExporter(), oldest_timestamp=self.oldest_timestamp)
+        self._extract(exporter=SlackExporter())
         self._transform()
         compressed_file = FileCompressor(max_size=100*1000000).compress_file(file_path=self.local_dir, replace=True)
         logger.info(f"Data saved and compressed locally at {compressed_file}")
