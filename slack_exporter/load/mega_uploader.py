@@ -56,8 +56,6 @@ class MegaUploader(Uploader):
             local_folder_path: The local path to the folder to upload.
             remote_folder_id: The ID of the remote folder in Mega.io where the folder will be uploaded.
         """
-        logger.info(f"Authenticating to Mega.io...")
-        self.authenticate()  # Ensure we are authenticated before uploading
 
         try:
 

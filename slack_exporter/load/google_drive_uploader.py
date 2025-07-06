@@ -58,9 +58,6 @@ class GoogleDriveUploader(Uploader):
     def upload_folder(self, local_folder_path: Path, remote_folder_id: str) -> bool:
         """Uploads a folder and its structure to Google Drive"""
         logger.info(f"Authenticating to Google Drive...")
-        if not self.authenticate():
-            logger.error("Authentication failed. Cannot upload to Google Drive.")
-            return False
 
         try:
 

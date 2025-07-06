@@ -13,7 +13,8 @@ class Uploader(ABC):
 
     def __init__(self, credentials: str | dict[str, str] = None):
         """Initializes the uploader"""
-        self.authenticated = self.authenticate(credentials)
+        if not self.authenticate(credentials):
+            raise ConnectionError("Could not authenticate to uploader service.")
 
     @abstractmethod
     def authenticate(self, credentials: str | dict[str, str]) -> bool:
