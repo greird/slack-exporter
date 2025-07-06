@@ -19,25 +19,13 @@ Gemini CLI and Github Copilot have been used extensively to write the code in th
 
 ## Installation
 
-Before you begin, ensure you have the following prerequisites:
-
-- **Python >=3.11**
-- **Poetry**
-- **megacmd** (if using Mega.io for uploads): Command-line tool for Mega.io. 
-- **Slack Bot Token**
-
 1.  **Clone the project**:
     ```bash
     git clone git@github.com:greird/slack-exporter.git
     cd slack-exporter
     ```
 
-2.  **Install Python dependencies**:
-    This project uses `Poetry` for dependency management. If you don't have Poetry, install it first. Then, run:
-    ```bash
-    poetry install
-    ```
-3. **Create a Slack App**:
+2.  **Create a Slack App**:
     Your Slack App should have a Bot Token with the following permissions
     - channels:history
     - channels:read
@@ -47,6 +35,40 @@ Before you begin, ensure you have the following prerequisites:
     - links:read
 
     For a conversation to be part of the export, the Slack App bot should be added to it.
+
+3.  **Configure your Cloud service if needed**
+    See [Cloud configuration](#cloud-configuration) section below.
+
+4.  **Create a .env file with the following informationn**
+    ```dotenv
+    SLACK_BOT_TOKEN=''
+
+    GOOGLE_DRIVE_PARENT_FOLDER='' # this must be the ID as found in the URL of the folder
+    GOOGLE_CREDENTIALS_PATH='credentials.json'
+
+    MEGA_PARENT_FOLDER=''
+    MEGA_EMAIL=''
+    MEGA_PASSWORD=''
+    ```
+
+5.  **Edit `main.py` to configure your pipeline**
+    Edit the [main.py](/slack_exporter/main.py) file with your own configuration.
+
+6.  **Use Docker or install dependencies manunally.**
+
+    With Docker:
+    ```bash
+    docker build -t "slack-exporter" .
+    docker run slack-exporter
+    ```
+
+    With Poetry:
+    ```bash
+    poetry install
+    poetry run python slack_exporter/main.py
+    ```
+
+    See [Mega.io Configuration](#megaio-configuration) for MegaCmd installation.
 
 ## Cloud configuration
 
@@ -68,22 +90,23 @@ During the first run, the script will prompt you to authenticate via your browse
 
 To upload files to Mega.io, you need to have `megacmd` [installed](https://github.com/meganz/megacmd) and configured. The `MegaUploader` class relies on `megacmd` being available in your system's PATH and will run `mega-login $MEGA_EMAIL $MEGA_PASSWORD` to authenticate.
 
-## Usage
+## Editing `main.py`
 
-To run one of the existing ETL, edit and run `slack_exporter/main.py`.
+A few preconfiguration exists:
+- SlackToGoogleDrive: Export from Slack andupload to Google Drive.
+- SlackToMega: Export from Slack and upload to Mega.
+- SlackToLocal: Export from Slack and keep the files locally.
+- UploadFolderToGoogleDrive: Upload a local folder to Google Drive.
 
-```bash
-python slack_exporter/main.py
-```
-
-Or create your own pipeline. 
-Below is an example implementation to export all data from Slack, process them and upload them to Mega.
+Edit `main.py` to use one of the pre-existing configuration or build a new subclass of ETL.
 
 ```py
 # main.py
+from dotenv import load_dotenv, find_dotenv
 
 from slack_exporter.etl import ETL
 from slack_exporter.extract.slack_exporter import SlackExporter
+from slack_exporter.load.mega_uploader import MegaUploader
 
 class SlackToMega(ETL):
     def run(self):
