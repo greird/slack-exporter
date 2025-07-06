@@ -8,7 +8,6 @@ import requests
 from slack_exporter.extract.exporter import Exporter
 from slack_exporter.logger_config import logger
 
-
 class SlackExporter(Exporter):
     """Class to export Slack channels history and files.
 
@@ -33,8 +32,7 @@ class SlackExporter(Exporter):
         self.headers = {"Authorization": f"Bearer {self.slack_token}"}
 
         if not self.slack_token:
-            logger.error("SLACK_BOT_TOKEN environment variable is not set.")
-            return False
+            raise ValueError("SLACK_BOT_TOKEN environment variable is not set.")
 
         try:
             response = requests.get(

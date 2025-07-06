@@ -1,14 +1,16 @@
 import os
 from datetime import datetime, timedelta
+from dotenv import load_dotenv, find_dotenv
 
 from slack_exporter.logger_config import logger
 from slack_exporter.etl import (
     SlackToGoogleDrive, 
     SlackToLocal,
-    SlackToLocalWithCompression,
     SlackToMega,
     UploadFolderToGoogleDrive
 )
+
+load_dotenv(dotenv_path=find_dotenv(raise_error_if_not_found=True))
 
 if __name__ == "__main__":
     logger.info("=== Starting Slack backup ===")
