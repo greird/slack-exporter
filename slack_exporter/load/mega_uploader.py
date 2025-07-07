@@ -79,4 +79,6 @@ class MegaUploader(Uploader):
         
         result = subprocess.run(command, check=True, capture_output=True, text=True)
         logger.info(f"{result.stdout.strip()}")
+
+        return True
     
