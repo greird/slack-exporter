@@ -10,14 +10,16 @@ def create_folder_if_not_exists(folder_path: str) -> bool:
         Path(folder_path).mkdir(parents=True, exist_ok=True)
         return True
     except Exception as e:
-        logger.error(f"Folder creation error {folder_path}: {e}")
-        return False
+        raise Exception(f"Folder creation error {folder_path}: {e}")
 
 def get_files_in_folder(folder_path: Path, file_list: list[Path] = None) -> list[Path]:
     """Returns a list of all files (as paths) inside a given folder and its subdirectories.
 
     Args:
         folder_path: The path to the folder to search.
+
+    Raises:
+        NotADirectoryError
 
     Returns:
         A list of Path objects, each representing a file.

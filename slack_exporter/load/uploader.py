@@ -9,6 +9,9 @@ class Uploader(ABC):
     Attributes:
         authenticated (bool): Indicates whether the uploader is authenticated.
         credentials (str | dict[str, str]): Credentials for accessing remote storage. This can be a path to a credentials file or a dictionary containing login and password.
+
+    Raises:
+        ConnectionError if authentication to Uploader service failed.
     """
 
     def __init__(self, credentials: str | dict[str, str] = None):
@@ -22,9 +25,9 @@ class Uploader(ABC):
         This method should be implemented by subclasses to handle specific authentication logic.
         
         Returns:
-            bool: True if authentication was successful, False otherwise.
+            bool: True if authentication was successful.
         """
-        pass
+        ...
 
 
     @abstractmethod

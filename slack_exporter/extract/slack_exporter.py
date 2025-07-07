@@ -16,7 +16,6 @@ class SlackExporter(Exporter):
         
     Methods:
         authenticate(): Authenticates the Slack API using the bot token.
-        get_workspace_info(): Retrieves workspace information.
         get_channels_list(): Retrieves the list of channels in the workspace.
         get_channel_history(channel_id, limit=15, cursor=None, messages=None): Retrieves the complete history of a channel with pagination.
         download_attachments(): Downloads attachments from exported Slack messages.
@@ -26,67 +25,59 @@ class SlackExporter(Exporter):
         super().__init__()
 
     def authenticate(self) -> bool:
-        """Authenticates the Slack API using the bot token."""
+        """Authenticates the Slack API using the bot token.
+        
+        Raises:
+            Exception: if an unknown error occured
+            HTTPError: if request status code >= 400
+            RequestException: if the response content is unexpected
+            ValueError: if the given Slack Bot Token is invalid
+        """
 
         self.slack_token = os.getenv("SLACK_BOT_TOKEN")
         self.headers = {"Authorization": f"Bearer {self.slack_token}"}
 
         if not self.slack_token:
-            raise ValueError("SLACK_BOT_TOKEN environment variable is not set.")
+            raise ValueError("SLACK_BOT_TOKEN environment variable is not set")
 
         try:
             response = requests.get(
                 "https://slack.com/api/auth.test",
                 headers=self.headers
             )
+            response.raise_for_status()
+
             data = response.json()
+
             if data.get("ok"):
                 logger.info("Slack authentication successful.")
                 return True
             else:
-                logger.error(f"Slack authentication failed: {data.get('error')}")
-                return False
+                raise requests.exceptions.RequestException(f"Slack authentication failed: {data.get('error')}")
+            
         except Exception as e:
-            logger.error(f"Error during Slack authentication: {e}")
-            return False
+            raise Exception(f"Error during Slack authentication: {e}")
     
-    def get_workspace_info(self):
-        """Retrieves workspace information"""
-        try:
-            response = requests.get(
-                "https://slack.com/api/team.info",
-                headers=self.headers
-            )
-            data = response.json()
-            if data.get("ok"):
-                return data["team"]
-            else:
-                logger.error(f"Erreur API Slack: {data.get('error')}")
-                return None
-        except Exception as e:
-            logger.error(f"Erreur lors de la récupération des infos workspace: {e}")
-            return None
-
     def get_channels_list(self) -> list:
-        """Retrieves the list of channels"""
-        channels = []
+        """Retrieves the list of channels
 
-        try:
-            response = requests.get(
-                "https://slack.com/api/users.conversations",
-                headers=self.headers
-            )
-            data = response.json()
+        Raises:
+            HTTPError: if request status code >= 400
+            RequestException: if the response content is unexpected
+        """
 
-            if data.get("ok"):
-                channels = data["channels"]
-            else:
-                logger.error(f"Erreur API Slack: {data.get('error')}")
+        response = requests.get(
+            "https://slack.com/api/users.conversations",
+            headers=self.headers
+        )
+        response.raise_for_status()
 
-        except Exception as e:
-            logger.error(f"Erreur lors de la récupération des channels: {e}")
+        data = response.json()
 
-        return channels
+        if data.get("ok"):
+            return data["channels"]
+        else:
+            raise requests.exceptions.RequestException(f"Slack API error: {data.get('error')}")
         
     def get_channel_history(
             self, 
@@ -104,6 +95,11 @@ class SlackExporter(Exporter):
             cursor (str): The cursor for pagination, if any.
             messages (list): A list to accumulate messages across multiple requests.    
             oldest_timestamp (float): The timestamp to start retrieving messages from.
+
+        Raises:
+            Exception: if an unknown error occured
+            HTTPError: if request status code >= 400
+            RequestException: if the response content is unexpected
 
         Returns:
             dict: A dictionary containing the messages and a boolean indicating if there are more messages to retrieve.
@@ -159,7 +155,7 @@ class SlackExporter(Exporter):
                         logger.warning("has_more is true, but no next_cursor found. Stopping pagination.")
 
             else:
-                logger.error(f"Slack API error for channel {channel_id}: {data.get('error')}")
+                raise requests.exceptions.RequestException(f"Slack API error for channel {channel_id}: {data.get('error')}")
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Request error while retrieving history for {channel_id}: {e}")
@@ -180,6 +176,11 @@ class SlackExporter(Exporter):
         Args:
             export_path (Path): The path where the exported data is stored.
             file_suffix (str): A suffix to add to the filenames of downloaded attachments.
+
+        Raises:
+            Exception: if an unknown error occured
+            HTTPError: if request status code >= 400
+            RequestException: if the response content is unexpected
         """
 
         logger.info(f"Starting attachment download for {export_path}...")
@@ -207,7 +208,7 @@ class SlackExporter(Exporter):
                                         basename, extension = original_name.rsplit(".", 1)
                                         file_name = basename + file_suffix + "." + extension
                                     else:
-                                        file_name = original_name + file_suffix
+                                        file_name = original_name + file_suffix                     
                                 else:
                                     file_name = original_name
 
@@ -229,11 +230,11 @@ class SlackExporter(Exporter):
                                     logger.info(f"Downloaded attachment: {file_path}")
                                     
                                 except requests.exceptions.RequestException as e:
-                                    logger.error(f"Error downloading {file_name} from {download_url}: {e}")
+                                    raise requests.exceptions.RequestException(f"Error downloading {file_name} from {download_url}: {e}")
                                 except Exception as e:
-                                    logger.error(f"Unexpected error saving {file_name}: {e}")
+                                    raise Exception(f"Unexpected error saving {file_name}: {e}")
             except Exception as e:
-                logger.error(f"Error processing JSON file {json_file}: {e}")
+                raise Exception(f"Error processing JSON file {json_file}: {e}")
         
         logger.info("Attachment download complete.")
 
@@ -249,6 +250,12 @@ class SlackExporter(Exporter):
             file_suffix (str): A suffix to add to the filenames of downloaded attachments.
             oldest_timestamp (float): The timestamp to start retrieving messages from.
 
+        Raises:
+            Exception: if an unknown error occured
+            HTTPError: if request status code >= 400
+            RequestException: if the response content is unexpected
+            RuntimeWarning: if no channels where found in the Slack workspace
+
         Returns:
             Path | None: The path to the exported data or None if the export failed.
         """
@@ -257,10 +264,6 @@ class SlackExporter(Exporter):
 
         if not export_path.exists():
             export_path.mkdir(parents=True, exist_ok=True)
-
-        workspace_info = self.get_workspace_info()
-        if not workspace_info:
-            raise RuntimeError("Failed to retrieve workspace information. Please check your Slack token and permissions.")
 
         channels = self.get_channels_list()
         if not channels:
@@ -271,22 +274,28 @@ class SlackExporter(Exporter):
             channel_name = channel["name"]
             logger.info(f"Exporting channel: {channel_name} ({channel_id})")
 
-            history = self.get_channel_history(
-                channel_id=channel_id, 
-                oldest_timestamp=oldest_timestamp
-                )
+            try:
+                history = self.get_channel_history(
+                    channel_id=channel_id, 
+                    oldest_timestamp=oldest_timestamp
+                    )
+                
+                channel_export_path = export_path / f"{channel_name}.json"
+                with open(channel_export_path, 'w') as f:
+                    json.dump(history, f, indent=4)
+                
+                logger.info(f"Channel {channel_name} exported to {channel_export_path}")
 
-            if not history.get("ok"):
-                logger.error(f"Failed to retrieve history for channel {channel_name}: {history.get('error')}")
+            except Exception as e:
+                logger.error(f"Failed to retrieve history for channel {channel_name}: {e}")
                 continue
 
-            channel_export_path = export_path / f"{channel_name}.json"
-            with open(channel_export_path, 'w') as f:
-                json.dump(history, f, indent=4)
+        try:
+            self.download_attachments(export_path, file_suffix)
             
-            logger.info(f"Channel {channel_name} exported to {channel_export_path}")
-
-        self.download_attachments(export_path, file_suffix)
+        except Exception as e:
+            logger.error(f"Failed to download attachments.")
+            raise
 
         logger.info("Export completed successfully.")
 

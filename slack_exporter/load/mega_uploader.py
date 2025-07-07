@@ -25,8 +25,12 @@ class MegaUploader(Uploader):
     def authenticate(self, credentials: dict[str, str]) -> bool:
         """This method uses the `mega-login` command from megacmd to authenticate.
 
+        Raises:
+            CalledProcessError: Error with MegaCmd CLI tool
+            ConnectionError: Unknown error preventing authentication
+
         Returns:
-            bool: True if authentication was successful, False otherwise.
+            bool: True if authentication was successful.
         """
 
         try:
@@ -37,45 +41,42 @@ class MegaUploader(Uploader):
             ]
  
             result = subprocess.run(command, check=True, capture_output=True, text=True)
-            logger.info(f"{result.stdout.strip()}")
-
-            return True
 
         except subprocess.CalledProcessError as e:
             if e.returncode == 54:
                 logger.info("Already authenticated to Mega.io.")
                 return True
             else:
-                logger.error("Mega.io login failed. Please check your credentials.")
-                return False
+                raise subprocess.CalledProcessError(f"Error running MegaCmd: {e}")
+        except Exception as e:
+                raise ConnectionError(f"Mega.io login failed: {e}")
 
-    def upload_folder(self, local_folder_path: str, remote_folder_id: str = "") -> bool:
+        logger.info(f"{result.stdout.strip()}")
+        return True
+
+    def upload_folder(self, local_folder_path: str, remote_folder_id: str = "") -> None:
         """Uploads a folder and its structure to Mega.io using megacmd.
 
         Args:
             local_folder_path: The local path to the folder to upload.
             remote_folder_id: The ID of the remote folder in Mega.io where the folder will be uploaded.
+
+        Raises:
+            CalledProcessError: Any error related to MegaCmd CLI.
+
+        Returns:
+            bool: True if authentication was successful, False otherwise.
         """
 
-        try:
-
-            logger.info(f"Uploading folder {local_folder_path} to Mega.io in {remote_folder_id}...")
-            
-            command = [
-                "mega-put",
-                "-c",
-                local_folder_path,
-                remote_folder_id
-            ]
-            
-            result = subprocess.run(command, check=True, capture_output=True, text=True)
-            logger.info(f"{result.stdout.strip()}")
-            
-            return True
-            
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Mega.io upload error (megacmd exited with code {e.returncode}): {e.stderr.strip()}")
-            return False
-        except Exception as e:
-            logger.error(f"Mega.io upload error: {e}")
-            return False
+        logger.info(f"Uploading folder {local_folder_path} to Mega.io in {remote_folder_id}...")
+        
+        command = [
+            "mega-put",
+            "-c",
+            local_folder_path,
+            remote_folder_id
+        ]
+        
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        logger.info(f"{result.stdout.strip()}")
+    
