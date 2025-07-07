@@ -41,15 +41,10 @@ Gemini CLI and Github Copilot have been used extensively to write the code in th
 
 4.  **Create a .env file with the following informationn**
     ```dotenv
-    SLACK_BOT_TOKEN=''
-
-    GOOGLE_DRIVE_PARENT_FOLDER='' # this must be the ID as found in the URL of the folder
-    GOOGLE_CREDENTIALS_PATH='credentials.json'
-
-    MEGA_PARENT_FOLDER=''
-    MEGA_EMAIL=''
-    MEGA_PASSWORD=''
+    SLACK_BOT_TOKEN='YOUR_SLACKBOT_TOKEN'
     ```
+
+    You can also use this method to store your meta and google drive credentials if needed.
 
 5.  **Edit `main.py` to configure your pipeline**
     Edit the [main.py](/slack_exporter/main.py) file with your own configuration.
