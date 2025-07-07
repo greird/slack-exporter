@@ -94,9 +94,8 @@ class ETL(ABC):
                 logger.info("Cleaning up local directory...")
                 shutil.rmtree(self.local_dir)
         else:
-            logger.error("Cloud storage upload error")
+            raise Exception("Cloud storage upload error")
         
-        logger.info("=== Backup completed successfully ===")
         return True
     
     @abstractmethod
