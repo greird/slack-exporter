@@ -1,4 +1,4 @@
-# Slack Exporter & Backup
+# Slack Exporter
 
 This project automates the backup of Slack workspace files to a local folder, with options to upload the backup folder to Google Drive or Mega.io.
 
