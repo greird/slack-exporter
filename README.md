@@ -15,7 +15,7 @@ This system can be extended to other service simply by subclassing the [ETL](/sl
 
 This project is a work in progress and is meant to run locally. Some of the authentication process is not secure enough.
 
-Gemini CLI, Github Copilot and Claude have been used extensively to write the code in this repository, especiall the API interfaces and documentation.
+Gemini CLI, Github Copilot and Claude have been used extensively to write the code in this repository, especially the API interfaces and documentation.
 
 ## Installation
 

@@ -22,16 +22,14 @@ RUN wget -O- https://mega.nz/linux/repo/xUbuntu_22.04/Release.key | apt-key add 
     apt-get install -y megacmd && \
     rm -rf /var/lib/apt/lists/*
 
-# Create a symbolic link for python command (optional)
+# Create a symbolic link for python command
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # Set working directory
 WORKDIR /app
 
-# Copy requirements file
+# Install Python dependencies
 COPY requirements.txt .
-
-# Install Python dependencies and MegaCmd
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY slack_exporter slack_exporter
@@ -39,5 +37,5 @@ COPY .env .env
 # Google Drive credentials file – remove if not needed
 COPY credentials.json credentials.json
 
-# Default command: show dependencies and then keep container running
+# run main.py
 CMD ["python", "-m", "slack_exporter.main"]
